@@ -14,8 +14,8 @@ final class Collector {
 
     // MARK: - Config
 
-    private let limit: Int = 20
-    private let foolproof: Int = 100
+    private let limit: Int = 100
+    private let foolproof: Int = 500
 
 
     // MARK: -
@@ -46,15 +46,12 @@ final class Collector {
 
     func collect(identifier: String, event: Event) {
         let entry = Entry(identifier: identifier, type: event.type, date: Date(), parameters: event.parameters)
-        print("enty \(entry)")
         queue.append(entry)
 
         if queue.count > foolproof {
             queue.removeFirst(queue.count - foolproof - 1)
             queue.append(Entry(identifier: "stats", type: "fool-proof", date: Date(), parameters: [:]))
         }
-
-        print("collector | got \(queue.count) events")
 
         if queue.count > limit {
             flush()
@@ -77,13 +74,9 @@ final class Collector {
 
         let task = session.dataTask(with: request) { _, _, error in
             if error != nil {
-                print("collector | flush error")
-
                 DispatchQueue.main.async {
                     self.queue.append(contentsOf: objects)
                 }
-            } else {
-                print("collector | flush ok")
             }
         }
 
@@ -93,11 +86,8 @@ final class Collector {
     func archive() {
         guard let url = filepath() else { return }
 
-        if let data = encode(entries: queue), (try? data.write(to: url)) != nil {
-//            print("collector | archive ok")
-        } else {
-//            print("collector | archive error")
-        }
+        let data = encode(entries: queue)
+        try? data?.write(to: url)
     }
 
     func unarchive() {
@@ -105,22 +95,14 @@ final class Collector {
 
         if let data = try? Data(contentsOf: url), let result = decode(data: data) {
             queue = result
-//            print("collector | unarchive ok")
-        } else {
-//            print("collector | archive error")
         }
     }
 
     func clean() {
         guard let url = filepath() else { return }
 
-        do {
-            let manager = FileManager.default
-            try manager.removeItem(at: url)
-//            print("collector | clean ok")
-        } catch {
-//            print("collector | clean error \(error)")
-        }
+        let manager = FileManager.default
+        try? manager.removeItem(at: url)
     }
 
 
