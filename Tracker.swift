@@ -20,7 +20,7 @@ final class Tracker<E: Event> {
 
     // MARK: -
 
-    init(path: [String] = [], collector: Collector = Collector()) {
+    init(path: [String] = [], collector: Collector) {
         self.path = path
         self.collector = collector
     }

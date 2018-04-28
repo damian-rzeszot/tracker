@@ -16,30 +16,18 @@ final class Collector {
 
     private let limit: Int = 20
     private let foolproof: Int = 100
-    private let endpoint: URL = URL(string: "https://lustapo-stats.herokuapp.com/stats")!
-
-
-    // MARK: -
-
-
-    private let session: URLSession = .shared
 
 
     // MARK: -
 
     private let storage: IdentityStorage
+    private let endpoint: URL
+    private let session: URLSession
 
-    init(storage: IdentityStorage) {
+    init(endpoint: URL, storage: IdentityStorage, session: URLSession) {
+        self.endpoint = endpoint
         self.storage = storage
-    }
-
-    convenience init() {
-        #if DEBUG
-            print("tracker | using in-memory identity storage")
-            self.init(storage: InMemoryIdentityStorage())
-        #else
-            self.init(storage: UserDefaultsIdentityStorage())
-        #endif
+        self.session = session
 
         unarchive()
     }
@@ -55,7 +43,6 @@ final class Collector {
         let date: Date
         let parameters: [String: Any]
     }
-
 
     func collect(identifier: String, event: Event) {
         let entry = Entry(identifier: identifier, type: event.type, date: Date(), parameters: event.parameters)
@@ -86,6 +73,7 @@ final class Collector {
         request.httpMethod = "POST"
         request.timeoutInterval = 15
         request.httpBody = encode(entries: objects)
+        request.setValue(identity, forHTTPHeaderField: "tracking-identity")
 
         let task = session.dataTask(with: request) { _, _, error in
             if error != nil {
